@@ -52,13 +52,15 @@ while count <= 997:
             # Initialisation of Parameters and Distribution Values
             if count == 0:
                 mean1[x][y][:] = [40, 90, 160]
+                mean2[x][y][:] = [40, 90, 160]
+                mean3[x][y][:] = [40, 90, 160]
                 cov[x][y][:] = [20, 20, 20]
                 weight[x][y][:] = [0.33, 0.33, 0.34]
 
             dist = np.zeros((2, 3), dtype=np.float64, order='C')
             match = -1
 
-            # K-means algorithm, In each iteration -
+            # Approximate K-means algorithm, In each iteration -
             # We check for the matching Distribution and then update the parameters of the matched one
             # And keep the others same
 
@@ -67,10 +69,12 @@ while count <= 997:
                 temp = frame[x][y][:] - [mean1[x][y][i], mean2[x][y][i], mean3[x][y][i]]
 
                 # Following is the square of the Mahalanobis Distance (the exponent term in Gaussian Distribution)
+                
                 euclid_distance = np.dot(temp.transpose(), temp)
                 threshold = (1 / cov[x][y][i]) * euclid_distance
 
                 # If the threshold is less than (2.5*2.5) = 6.25, we consider it as a matched distribution
+                
                 if threshold < (2.5 * 2.5):
 
                     match = i
@@ -95,7 +99,7 @@ while count <= 997:
                     # updating the weight of the non-matched class
                     weight[x][y][i] = (1 - alpha) * weight[x][y][i]
 
-                    # NOTE-sum of the weights after updating is equal to one. Hence, no normalization required
+                    # NOTE-sum of the weights after updating is equal to one, if the sum was one before update. Hence, no normalization required
                 # -----------------------------------------------------------------------
 
             # Maintain the distributions in decreasing order of Weight/(sqrt(Variance))
@@ -107,7 +111,7 @@ while count <= 997:
             for i in range(3):
                 dist[1][i] = weight[x][y][i] / math.sqrt(cov[x][y][i])
 
-            # using the distance
+            # using the distance we sort the 'dist' array - (Bubble Sort)
             for i in range(3):
                 for j in range(0, 2 - i):
                     if dist[1][j] < dist[1][j + 1]:
@@ -129,6 +133,9 @@ while count <= 997:
                 mean3[x][y][least_prob] = frame[x][y][2]
 
                 cov[x][y][least_prob] = 10000
+                weight[x][y][least_prob] = 0.2 * weight[x][y][least_prob]
+                weight[x][y][dist[0][:-1]] += 0.4 * weight[x][y][least_prob]
+          
 
             # Pixel Classification as background or Foreground
             # B is our Background Threshold distribution
@@ -153,7 +160,7 @@ while count <= 997:
             else:
                 for i in range(B):
                     if match == dist[0][i]:
-                        bg[x][y][:] = frame[x][y][:]
+                        bg[x][y][:] = [mean1[x][y][match], mean2[x][y][match], mean3[x][y][match]]
                         break
                     else:
                         fg[x][y][:] = frame[x][y][:]
