@@ -114,8 +114,9 @@ while count <= 997:
             # Index of most probable and least probable distributions after above sorting
             # This is the index in the mean1, mean2, mean3, weight and cov array of the distributions
 
-            most_prob = dist[0][0]
-            least_prob = dist[0][2]
+            most_prob = int(dist[0][0])
+            least_prob = int(dist[0][2])
+            idist = dist.astype(int)
 
             # ADDING NEW DISTRIBUTION WHEN NO MATCH FOUND
 
@@ -128,7 +129,7 @@ while count <= 997:
 
                 cov[x][y][least_prob] = 10000
                 weight[x][y][least_prob] = 0.2 * weight[x][y][least_prob]
-                weight[x][y][dist[0][:-1]] += 0.4 * weight[x][y][least_prob]
+                weight[x][y][idist[0][:-1]] += 0.4 * weight[x][y][least_prob]
           
 
             # Pixel Classification as background or Foreground
@@ -137,26 +138,34 @@ while count <= 997:
             B = 0
             sum_threshold = 0
             for i in range(3):
-                sum_threshold += weight[x][y][dist[0][i]]
+                sum_threshold += weight[x][y][int(dist[0][i])]
                 B += 1
                 if sum_threshold > T:
                     break
 
-            # We will classify the Pixel as foreground in two cases :
-            # Case-1- No match found for current Pixel value,
+            # Following cases are Possible for the pixel- 
+            # Case-1- No match found for current Pixel value 
+            #         Then, Fg = current frame and Bg = Most Probable distribution (B threshold) 
             # Case-2- Match found for current Pixel value But it is outside threshold background region B.
-
-            # We will classify the Pixel as background in following case :
+            #         Then, Fg = current frame and Bg = Most Probable distribution (B threshold)
             # Case-3- Match found for current Pixel value And it is within the threshold background region B.
+            #         Then, Fg = [0,0,0] (Black) and Bg = Most Probable distibution (B threshold)
+            #         Another Possibility for Bg is Bg = current frame
 
+            # Background is always most probable one, Here I am assuming that value of our T is such that we have a uni-modal distribution.
+            bg[x][y][:] = [mean1[x][y][int(most_prob)], mean2[x][y][int(most_prob)], mean3[x][y][int(most_prob)]]
+            
+            # When match = -1, this implies that no match was found for the current pixel value, which implies motion and hence foreground = current frame.
             if match == -1:
                 fg[x][y][:] = frame[x][y][:]
             else:
                 for i in range(B):
                     if match == dist[0][i]:
-                        bg[x][y][:] = frame[x][y][:]
+                        # This is the case when match is found and current pixel value is within the B threshold, thus foreground goes black for that
+                        fg[x][y][:] = [0,0,0]
                         break
                     else:
+                        # This is the case when match is found but current pixel value is outside the B threshold, thus foreground is equal to current frame.
                         fg[x][y][:] = frame[x][y][:]
 
 
