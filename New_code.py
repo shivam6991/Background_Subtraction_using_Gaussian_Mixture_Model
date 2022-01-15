@@ -5,13 +5,6 @@ import numpy as np
 import math
 
 
-def gauss(m, v, x):
-    pi = 3.1415926
-    d = (2 * pi * v) ** .5
-    n = math.exp(-((float(x) - float(m)) ** 2) / (2 * v))
-    return n / d
-
-
 capture = cv2.VideoCapture('umcp.mpg')
 ret, frame = capture.read()
 pix = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -109,13 +102,14 @@ while count <= 997:
             # 'dist[1][:]' array is stored with the W/sigma ratio for each distribution
 
             for i in range(3):
-                dist[1][i] = weight[x][y][i] / math.sqrt(cov[x][y][i])
+                dist[0][i], dist[1][i] = i, (weight[x][y][i] / math.sqrt(cov[x][y][i]))
 
             # using the distance we sort the 'dist' array - (Bubble Sort)
             for i in range(3):
                 for j in range(0, 2 - i):
                     if dist[1][j] < dist[1][j + 1]:
-                        dist[:][j + 1], dist[:][j] = dist[:][j], dist[:][j + 1]
+                       dist[0][j + 1], dist[0][j] = dist[0][j], dist[0][j + 1]
+                       dist[1][j + 1], dist[1][j] = dist[1][j], dist[1][j + 1]
 
             # Index of most probable and least probable distributions after above sorting
             # This is the index in the mean1, mean2, mean3, weight and cov array of the distributions
@@ -160,7 +154,7 @@ while count <= 997:
             else:
                 for i in range(B):
                     if match == dist[0][i]:
-                        bg[x][y][:] = [mean1[x][y][match], mean2[x][y][match], mean3[x][y][match]]
+                        bg[x][y][:] = frame[x][y][:]
                         break
                     else:
                         fg[x][y][:] = frame[x][y][:]
